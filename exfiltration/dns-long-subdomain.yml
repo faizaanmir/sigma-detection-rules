@@ -1,0 +1,41 @@
+title: DNS Exfiltration via Long Subdomain Labels
+id: f2c8b5d6-0a9c-9f3e-4b7d-6c8e0a2b4d5e
+status: experimental
+description: |
+    Detects potential DNS tunneling or data exfiltration by identifying
+    DNS queries with unusually long subdomain labels. Adversaries encode
+    data (base64, hex) into DNS query subdomains to exfiltrate information
+    to attacker-controlled authoritative DNS servers.
+references:
+    - https://attack.mitre.org/techniques/T1048/003/
+author: Faizaan Sajjad
+date: 2025/01/01
+tags:
+    - attack.exfiltration
+    - attack.t1048.003
+    - attack.command_and_control
+    - attack.t1071.004
+logsource:
+    category: dns
+detection:
+    selection:
+        QueryName|re: '.{100,}'
+    filter_known_good:
+        QueryName|endswith:
+            - '.microsoft.com'
+            - '.windows.com'
+            - '.office.com'
+            - '.azure.com'
+            - '.amazonaws.com'
+            - '.cloudfront.net'
+            - '.akamai.net'
+    condition: selection and not filter_known_good
+fields:
+    - QueryName
+    - src_ip
+    - QueryType
+falsepositives:
+    - CDN providers with long cache-key subdomains
+    - Security telemetry tools using DNS channels
+    - Some update mechanisms with encoded parameters
+level: medium

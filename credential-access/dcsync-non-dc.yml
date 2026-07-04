@@ -1,0 +1,41 @@
+title: DCSync Attack from Non-Domain Controller
+id: b8e4d1f2-6c5e-5b9a-0d3f-2e4a6c8d0f1a
+status: experimental
+description: |
+    Detects DCSync attacks by identifying Directory Replication Service (DRS)
+    requests containing sensitive replication GUIDs originating from a host
+    that is not a Domain Controller. DCSync allows an attacker to extract
+    password hashes for any domain account without running code on a DC.
+references:
+    - https://attack.mitre.org/techniques/T1003/006/
+    - https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4662
+author: Faizaan Sajjad
+date: 2025/01/01
+tags:
+    - attack.credential_access
+    - attack.t1003.006
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4662
+        ObjectType: 'domainDNS'
+        Properties|contains:
+            - '1131f6aa-9c07-11d1-f79f-00c04fc2dcd2'
+            - '1131f6ad-9c07-11d1-f79f-00c04fc2dcd2'
+            - '89e95b76-444d-4c62-991a-0facbeda640c'
+    filter_dcs:
+        SubjectUserName|endswith: '$'
+    condition: selection and not filter_dcs
+fields:
+    - Computer
+    - SubjectUserName
+    - SubjectDomainName
+    - ObjectName
+    - IpAddress
+falsepositives:
+    - Azure AD Connect performing password hash synchronization
+    - Microsoft Identity Manager
+    - Legitimate backup solutions with AD replication rights
+level: critical
